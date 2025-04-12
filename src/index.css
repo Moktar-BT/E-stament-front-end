@@ -1,5 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-
+/* Supprimer la flèche du sélecteur dans tous les navigateurs */
+.custom-select {
+    appearance: none; /* Masque la flèche dans la plupart des navigateurs */
+    -webkit-appearance: none; /* Pour WebKit (Chrome, Safari) */
+    -moz-appearance: none; /* Pour Firefox */
+    background-image: none; /* Supprime l'image de fond par défaut */
+    background: transparent; /* Fond transparent */
+  }
+  
+  /* Optionnel : Supprimer la flèche dans IE (si nécessaire) */
+  .custom-select::-ms-expand {
+    display: none; /* Masque la flèche dans Internet Explorer */
+  }
