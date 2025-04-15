@@ -13,8 +13,9 @@ function Statement() {
     withdrawals: true,
     transfers: true,
     payments: true,
-    fees: false,
+    fees: true,
   });
+  
   const [accountSelected, setAccountSelected] = useState("");
   const [Card, setCard] = useState("");
   const [statementType, setStatementType] = useState("Account-E-Statement");
@@ -23,9 +24,10 @@ function Statement() {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState({
-    from: "2023-05-01",
+    from: "2022-05-01",
     to: "2023-05-31",
   });
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,9 +70,9 @@ function Statement() {
         setLoading(false);
       }
     };
-
+    console.log(statementType)
     fetchData();
-  }, [statementType]);
+  }, [statementType, dateRange]); // Note: dateRange is in the dependency array, so you can trigger a data fetch when it updates
 
   return (
     <>
@@ -109,12 +111,12 @@ function Statement() {
                       const selectedValue = e.target.value;
                       setAccountSelected(selectedValue);
 
-                      // Extract the card data based on the selected value
+                      // Extract the card data based on the selected value when on Card-E-Statement
                       const selectedCard = cards.find(
                         (card) => `${card.cardType} Card (****${card.cardNumber.slice(-4)})` === selectedValue
                       );
                       if (selectedCard) {
-                        setCard(selectedCard);  // Set the selected card outside the rendering process
+                        setCard(selectedCard);
                       }
                     }}
                   >
@@ -143,9 +145,28 @@ function Statement() {
             </div>
 
             {/* Date Range Options */}
-            <DateRange />
+            {/* Pass setDateRange to allow the child to update dateRange in the parent */}
+            <DateRange dateRange={dateRange} setDateRange={setDateRange} />
+            <div className="p-6 bg-white rounded-lg shadow-sm">
+              <h3 className="mb-4 text-lg font-medium text-gray-800">Transaction Types</h3>
+              <div className="space-y-3">
+                {Object.entries(transactionTypes).map(([type, checked]) => (
+                  <div key={type} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={type}
+                      checked={checked}
+                      onChange={() => setTransactionTypes({ ...transactionTypes, [type]: !checked })}
+                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <label htmlFor={type} className="block ml-2 text-sm text-gray-700 capitalize">
+                      {type}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-            {/* Rest of your existing code remains the same */}
             <FileType />
 
             {/* Action Buttons */}
@@ -165,6 +186,8 @@ function Statement() {
             cardId={Card}
             dateRange={dateRange}
             operationType={transactionTypes}
+            statementType={statementType}
+          
           />
         </div>
         {/* Footer */}

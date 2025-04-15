@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import RightSideModal from './RightSideModal'; // Assurez-vous d'avoir ce composant
+import { useNavigate } from 'react-router-dom';
+import RightSideModal from './RightSideModal';
 
 function Logoutbutton() {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const navigate = useNavigate();
 
-  // Données de notifications exemple
   const sampleNotifications = [
     {
       id: 1,
@@ -33,36 +35,37 @@ function Logoutbutton() {
     setShowNotifications(!showNotifications);
   };
 
-  const handleLogout = () => {
-    // Ajoutez ici votre logique de déconnexion
-    console.log("Déconnexion...");
+  const confirmLogout = () => {
+    // 🧼 Supprimer le token et rediriger
+    localStorage.removeItem("token");
+    setShowLogoutModal(false);
+    navigate('/SignIn');
+    window.location.reload(); // <--- forces a full reload (bypasses cached pages)
   };
 
   return (
     <div className='flex items-center justify-center'>
-      {/* Bouton Notification avec indicateur de non-lus */}
+      {/* 🔔 Notification Button */}
       <button 
         onClick={handleNotificationClick}
         className='relative flex items-center justify-center px-2 py-1 mr-2 font-mono bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200'
       >
         <i className='text-2xl icon-notification_icon'></i>
-        {/* Badge pour les notifications non lues */}
         {sampleNotifications.some(n => !n.read) && (
           <span className='absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full'></span>
         )}
       </button>
 
-      {/* Bouton Déconnexion */}
+      {/* 🔐 Logout Button */}
       <button 
-        onClick={handleLogout}
+        onClick={() => setShowLogoutModal(true)}
         className='flex items-center justify-center px-2 py-1 font-mono bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200'
       >
-    
         <i className='mr-1 text-2xl icon-logout'></i>
         Logout
       </button>
 
-      {/* Modal des Notifications */}
+      {/* 📨 Notification Modal */}
       <RightSideModal 
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
@@ -86,6 +89,32 @@ function Logoutbutton() {
           ))}
         </div>
       </RightSideModal>
+
+      {/* 🚪 Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-[400px]">
+            <h2 className="mb-4 text-lg font-semibold">Confirm Logout</h2>
+            <p className="mb-6 text-sm text-gray-600">
+              Are you sure you want to log out of the platform?
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                className="px-4 py-2 text-sm text-white bg-red-500 rounded hover:bg-red-600"
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import Settings from './Pages/Settings';
 import About from './Pages/About';
 import SignIn from './Pages/SignIn';
 import Statement from './Pages/Statement';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   const location = useLocation(); // Utilisez useLocation pour obtenir l'emplacement actuel
@@ -20,17 +21,67 @@ function App() {
 
       {/* Contenu principal */}
       <div className="flex-1 p-6 overflow-y-auto"> {/* Permet le défilement du contenu */}
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/Accounts" element={<Accounts />} />
-          <Route path="/Cards" element={<Cards />} />
-          <Route path="/Transactions" element={<Transactions />} />
-          <Route path="/Statements" element={<Statement />} />
-          <Route path="/Notifications" element="" />
-          <Route path="/Settings" element={<Settings />} />
-          <Route path="/About" element={<About />} />
-          <Route path="/SignIn" element={<SignIn />} />
-        </Routes>
+      <Routes>
+  <Route
+    path="/"
+    element={
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/Accounts"
+    element={
+      <ProtectedRoute>
+        <Accounts />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/Cards"
+    element={
+      <ProtectedRoute>
+        <Cards />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/Transactions"
+    element={
+      <ProtectedRoute>
+        <Transactions />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/Statements"
+    element={
+      <ProtectedRoute>
+        <Statement />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/Settings"
+    element={
+      <ProtectedRoute>
+        <Settings />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/About"
+    element={
+      <ProtectedRoute>
+        <About />
+      </ProtectedRoute>
+    }
+  />
+
+  {/* Route libre */}
+  <Route path="/SignIn" element={<SignIn />} />
+</Routes>
       </div>
     </div>
   );

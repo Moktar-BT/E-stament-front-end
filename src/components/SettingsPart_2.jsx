@@ -1,90 +1,53 @@
 "use client"
 
+import { useEffect, useState } from "react"
+
 function SettingsPart_2() {
-  // Sample login activity data based on the image
-  const loginActivities = [
-    {
-      date: "2023-05-05",
-      time: "14:30",
-      location: "Monastir",
-      deviceType: "Windows",
-      deviceIcon: "💻",
-      status: "Successful",
-    },
-    {
-      date: "2023-05-05",
-      time: "14:30",
-      location: "Sousse",
-      deviceType: "Android",
-      deviceIcon: "📱",
-      status: "Failed",
-    },
-    {
-      date: "2023-05-05",
-      time: "14:30",
-      location: "Bembla",
-      deviceType: "MacOS",
-      deviceIcon: "💻",
-      status: "Failed",
-    },
-    {
-      date: "2023-05-05",
-      time: "14:30",
-      location: "Khnis",
-      deviceType: "iOS",
-      deviceIcon: "📱",
-      status: "Successful",
-    },
-    // Ajoutez plus de lignes pour tester la barre de défilement
-    {
-      date: "2023-05-05",
-      time: "14:30",
-      location: "Test1",
-      deviceType: "Test",
-      deviceIcon: "💻",
-      status: "Successful",
-    },
-    {
-      date: "2023-05-05",
-      time: "14:30",
-      location: "Test2",
-      deviceType: "Test",
-      deviceIcon: "📱",
-      status: "Failed",
-    },
-    {
-      date: "2023-05-05",
-      time: "14:30",
-      location: "Test3",
-      deviceType: "Test",
-      deviceIcon: "💻",
-      status: "Successful",
-    },
-    {
-        date: "2023-05-05",
-        time: "14:30",
-        location: "Test3",
-        deviceType: "Test",
-        deviceIcon: "💻",
-        status: "Successful",
-      },
-      {
-        date: "2023-05-05",
-        time: "14:30",
-        location: "Test3",
-        deviceType: "Test",
-        deviceIcon: "💻",
-        status: "Successful",
-      },
-  ]
+  const [loginActivities, setLoginActivities] = useState([])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        const response = await fetch("http://localhost:8083/Settings/ConnectionHistory", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+  
+        if (!response.ok) {
+          throw new Error("Failed to fetch connection history")
+        }
+  
+        const data = await response.json()
+  
+        const formattedData = data.map((activity) => {
+          const dateObj = new Date(activity.date_time)
+          return {
+            date: dateObj.toLocaleDateString(),
+            time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            location: activity.location,
+            deviceType: activity.deviceType,
+            deviceIcon: ["Android", "iOS"].includes(activity.deviceType) ? "📱" : "💻",
+            status: activity.status ? "Successful" : "Failed",
+          }
+        })
+  
+        const last15 = formattedData.slice(-15).reverse() // ✅ keep only the last 15 and reverse to show newest first
+        setLoginActivities(last15)
+      } catch (error) {
+        console.error("Error fetching login activity:", error)
+      }
+    }
+  
+    fetchData()
+  }, [])
+  
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-md">Security Options</h2>
-        <button className="px-8 py-2 text-sm text-white bg-indigo-500 rounded-md">
-          Change Password
-        </button>
       </div>
 
       <div>
@@ -145,6 +108,10 @@ function SettingsPart_2() {
                 ))}
               </tbody>
             </table>
+
+            {loginActivities.length === 0 && (
+              <div className="py-4 text-center text-gray-500">No login activity found.</div>
+            )}
           </div>
         </div>
       </div>

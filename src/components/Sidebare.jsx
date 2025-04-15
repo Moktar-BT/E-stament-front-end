@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logo1 from "../assets/proxym_logo.png";
 import logo from "../assets/proxym_log.png";
@@ -6,8 +6,15 @@ import profile_img from '../assets/Male Avatar 03.png';
 
 function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(true);
-  // Initialiser avec "menu1-0" pour sélectionner Dashboard par défaut
-  const [activeIndex, setActiveIndex] = useState("menu1-0");
+
+  // Load activeIndex from localStorage or default to "menu1-0"
+  const [activeIndex, setActiveIndex] = useState(() => {
+    return localStorage.getItem("activeMenuIndex") || "menu1-0";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("activeMenuIndex", activeIndex);
+  }, [activeIndex]);
 
   const menuItems1 = [
     { icon: <i className="icon-dashboard"></i>, label: "Dashboard", path: "/" },
@@ -54,7 +61,6 @@ function Sidebar() {
                 ${activeIndex === `menu1-${index}` ? "bg-indigo-500 text-white" : "text-gray-700 hover:bg-gray-100"}`}
             >
               <span className="text-2xl">{item.icon}</span>
-              {/* Texte avec transition */}
               <span
                 className={`ml-4 transition-all duration-300 ease-in-out ${
                   isExpanded ? "opacity-100" : "opacity-0"
@@ -76,7 +82,6 @@ function Sidebar() {
                 ${activeIndex === `menu2-${index}` ? "bg-indigo-500 text-white" : "text-gray-700 hover:bg-gray-100"}`}
             >
               <span className="text-2xl">{item.icon}</span>
-              {/* Texte avec transition */}
               <span
                 className={`ml-4 transition-all duration-300 ease-in-out ${
                   isExpanded ? "opacity-100" : "opacity-0"
@@ -92,7 +97,6 @@ function Sidebar() {
       {/* Profil en bas */}
       <div className="flex items-center p-3 pl-5 space-x-2 border-t border-gray-300">
         <img src={user.image} alt="Profile" className="w-10 h-10 rounded-full" />
-        {/* Texte avec transition */}
         <span
           className={`text-gray-700 transition-all duration-300 ease-in-out ${
             isExpanded ? "opacity-100" : "opacity-0"

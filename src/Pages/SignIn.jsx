@@ -35,7 +35,7 @@ function SignIn() {
       localStorage.setItem("token", data.token);
 
       // Redirect to the root page
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err.message);
     }
