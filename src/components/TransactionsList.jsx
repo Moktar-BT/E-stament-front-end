@@ -7,15 +7,16 @@ function TransactionsList() {
   const [transactions, setTransactions] = useState([]);
   const [cards, setCards] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  const [selectedFilter, setSelectedFilter] = useState("all");
-  const [selectedSource, setSelectedSource] = useState("all");
+  const [selectedFilter, setSelectedFilter] = useState("account");
+  const [selectedSource, setSelectedSource] = useState("account");
   const [selectedSourceId, setSelectedSourceId] = useState("");
-  const [period, setPeriod] = useState("last_month");
+  const [period, setPeriod] = useState("last_year");
   const [operationType, setOperationType] = useState("all");
 
   // Get the token from localStorage
-  const token = localStorage.getItem("authToken");
+  const token = localStorage.getItem("token");
 
+console.log(cards)
   // Create an Axios instance with Authorization header
   const axiosInstance = axios.create({
     headers: {
@@ -29,6 +30,7 @@ function TransactionsList() {
     axiosInstance.get("http://localhost:8083/Card/list_of_cards")
       .then((response) => {
         setCards(response.data);
+       // console.log(response.data);
       })
       .catch((error) => {
         console.error("Error fetching cards:", error);
@@ -38,6 +40,8 @@ function TransactionsList() {
     axiosInstance.get("http://localhost:8083/Account/list_of_accounts")
       .then((response) => {
         setAccounts(response.data);
+       //  console.log(response.data);
+        
       })
       .catch((error) => {
         console.error("Error fetching accounts:", error);
@@ -57,6 +61,7 @@ function TransactionsList() {
       axiosInstance.get("http://localhost:8083/Transactions/filtredTransactions", { params })
         .then((response) => {
           setTransactions(response.data);
+          console.log(response.data);
         })
         .catch((error) => {
           console.error("Error fetching transactions:", error);
@@ -89,9 +94,8 @@ function TransactionsList() {
             onChange={handleFilterChange}
             value={selectedFilter}
           >
-            <option value="all">All</option>
-            <option value="card">Card</option>
             <option value="account">Account</option>
+            <option value="card">Card</option>           
           </select>
 
           <select
@@ -102,12 +106,12 @@ function TransactionsList() {
           >
             {selectedSource === "card" && cards.map((card) => (
               <option key={card.id} value={card.id}>
-                Card {card.Type} {card.cardNumber.slice(-4)}
+                Card {card.cardType} ({card.cardNumber})
               </option>
             ))}
             {selectedSource === "account" && accounts.map((account) => (
               <option key={account.id} value={account.id}>
-                Account {account.Type} {account.accountRib}
+                Account {account.accountType} ({account.rib})
               </option>
             ))}
           </select>
@@ -128,7 +132,7 @@ function TransactionsList() {
             onChange={(e) => setOperationType(e.target.value)}
             value={operationType}
           >
-            <option value="all">All</option>
+           <option value="all">All</option>
             <option value="incomes">Incomes</option>
             <option value="expenses">Expenses</option>
           </select>
@@ -143,10 +147,11 @@ function TransactionsList() {
             <div key={transaction.id} className="grid items-center grid-cols-9 px-4 py-4 text-sm bg-gray-100 rounded-lg gap-x-4">
               <div className="font-medium text-blue-500">Transaction {transaction.id}</div>
               <span className="flex items-center justify-center">
-                {transaction.operation === "WITHDRAWAL" ? (
-                  <i className="p-1 text-xl text-red-500 bg-red-100 icon-withdrawal_icon"></i>
-                ) : (
+                {transaction.opereation === "DEPOSIT" ? (
                   <i className="p-1 text-xl text-green-500 bg-green-100 icon-deposit_icon"></i>
+                  
+                ) : (
+                  <i className="p-1 text-xl text-red-500 bg-red-100 icon-withdrawal_icon"></i>
                 )}
               </span>
               <div className="text-gray-600">{transaction.category}</div>

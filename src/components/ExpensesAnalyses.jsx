@@ -103,7 +103,7 @@ function ExpensesAnalyses() {
   const chartMax = Math.ceil(maxAmount / 500) * 500 || 500;
 
   return (
-    <div className="w-full p-5 bg-white border border-gray-100 rounded-lg shadow-sm">
+    <div className="w-full p-5 pb-10 bg-white border border-gray-100 rounded-lg shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-medium text-gray-600">Expenses Analysis</h3>

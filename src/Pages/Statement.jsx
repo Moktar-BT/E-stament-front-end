@@ -16,7 +16,12 @@ function Statement() {
     fees: true,
   });
   
+
+
+ 
   const [accountSelected, setAccountSelected] = useState("");
+  const[Account,setAccount]=useState("");
+  const[accountId,setAccountId]=useState("")
   const [Card, setCard] = useState("");
   const [statementType, setStatementType] = useState("Account-E-Statement");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,7 +32,36 @@ function Statement() {
     from: "2022-05-01",
     to: "2023-05-31",
   });
-  
+ 
+  console.log(accountId)
+
+ const handleSelectChange = (e) => {
+  const selectedValue = e.target.value;
+  setAccountSelected(selectedValue);
+
+  if (statementType === "Account-E-Statement") {
+    const selectedAccount = accounts.find((account) => {
+      const lastFourDigits = account.rib.slice(-4);
+      const displayText = `${account.accountType} Account (****${lastFourDigits})`;
+      return displayText === selectedValue;
+    });
+
+    if (selectedAccount) {
+      setAccountId(selectedAccount.id);
+    }
+  } else {
+    const selectedCard = cards.find((card) => {
+      const lastFourDigits = card.cardNumber.slice(-4);
+      const displayText = `${card.cardType} Card (****${lastFourDigits})`;
+      return displayText === selectedValue;
+    });
+
+    if (selectedCard) {
+      setCard(selectedCard);
+      setAccountId(selectedCard.id); // ou `setCardId`, si c'est plus logique dans ton contexte
+    }
+  }
+};
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,9 +82,13 @@ function Statement() {
           const response = await axios.get("http://localhost:8083/Account/list_of_accounts", { headers });
           setAccounts(response.data);
           if (response.data.length > 0) {
-            const account = response.data[0];
+            const account = response.data[0];   
             const lastFourDigits = account.rib.slice(-4);
-            setAccountSelected(`${account.accountType} Account (****${lastFourDigits})`);
+            setAccountSelected(`${account.accountType} Account (****${lastFourDigits})${account.id}`);
+           
+            
+           
+           
           }
         } else {
           const response = await axios.get("http://localhost:8083/Card/list_of_cards", { headers });
@@ -58,7 +96,7 @@ function Statement() {
           if (response.data.length > 0) {
             const card = response.data[0];
             const lastFourDigits = card.cardNumber.slice(-4);
-            setAccountSelected(`${card.cardType} Card (****${lastFourDigits})`);
+            setCard(`${card.cardType} Card (****${lastFourDigits})`);
           }
         }
       } catch (error) {
@@ -70,7 +108,7 @@ function Statement() {
         setLoading(false);
       }
     };
-    console.log(statementType)
+    
     fetchData();
   }, [statementType, dateRange]); // Note: dateRange is in the dependency array, so you can trigger a data fetch when it updates
 
@@ -107,23 +145,13 @@ function Statement() {
                   <select
                     className="w-full p-3 pr-10 border border-gray-200 rounded-md appearance-none bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     value={accountSelected}
-                    onChange={(e) => {
-                      const selectedValue = e.target.value;
-                      setAccountSelected(selectedValue);
-
-                      // Extract the card data based on the selected value when on Card-E-Statement
-                      const selectedCard = cards.find(
-                        (card) => `${card.cardType} Card (****${card.cardNumber.slice(-4)})` === selectedValue
-                      );
-                      if (selectedCard) {
-                        setCard(selectedCard);
-                      }
-                    }}
+                    onChange={(e) => handleSelectChange(e)}
                   >
                     {statementType === "Account-E-Statement"
                       ? accounts.map((account) => {
                           const lastFourDigits = account.rib.slice(-4);
                           const displayText = `${account.accountType} Account (****${lastFourDigits})`;
+                         
                           return (
                             <option key={account.id} value={displayText}>
                               {displayText}
@@ -181,14 +209,20 @@ function Statement() {
             </div>
           </div>
 
-          <StatementSimulation
-            accountID={accountSelected}
+          
+            
+            <StatementSimulation
+            accountSelected={accountSelected}
+            accountId={accountId}
             cardId={Card}
             dateRange={dateRange}
             operationType={transactionTypes}
             statementType={statementType}
           
           />
+          
+
+          
         </div>
         {/* Footer */}
         <div className="mt-10 ml-5">

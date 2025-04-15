@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import logo1 from "../assets/proxym_logo.png";
 import logo from "../assets/proxym_log.png";
 import profile_img from '../assets/Male Avatar 03.png';
+import { useLocation } from "react-router-dom";
+
 
 function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -11,6 +13,7 @@ function Sidebar() {
   const [activeIndex, setActiveIndex] = useState(() => {
     return localStorage.getItem("activeMenuIndex") || "menu1-0";
   });
+  localStorage.removeItem("activeMenuIndex");
 
   useEffect(() => {
     localStorage.setItem("activeMenuIndex", activeIndex);
@@ -30,6 +33,8 @@ function Sidebar() {
   ];
 
   const user = { image: profile_img, name: "Moktar BOUATAY" };
+  const location = useLocation(); 
+
 
   return (
     <div
@@ -58,7 +63,8 @@ function Sidebar() {
               key={`menu1-${index}`}
               onClick={() => setActiveIndex(`menu1-${index}`)}
               className={`flex items-center w-full px-4 py-2 rounded-lg cursor-pointer transition-all duration-200 
-                ${activeIndex === `menu1-${index}` ? "bg-indigo-500 text-white" : "text-gray-700 hover:bg-gray-100"}`}
+                ${location.pathname === item.path
+                  ? "bg-indigo-500 text-white" : "text-gray-700 hover:bg-gray-100"}`}
             >
               <span className="text-2xl">{item.icon}</span>
               <span

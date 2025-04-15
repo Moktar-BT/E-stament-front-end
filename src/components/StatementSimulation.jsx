@@ -3,10 +3,13 @@ import axios from 'axios';
 import logo from '../assets/proxym_log.png';
 import { Info } from 'lucide-react';
 
-function StatementSimulation({ accountSelected, cardId, dateRange, operationType ,statementType }) {
+function StatementSimulation({ accountSelected,accountId, cardId, dateRange, operationType ,statementType }) {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  console.log("child",accountId)
+
 
   // Extract operation types from the operationType object
   const getSelectedOperationTypes = () => {
@@ -37,8 +40,16 @@ function StatementSimulation({ accountSelected, cardId, dateRange, operationType
       const params = new URLSearchParams();
       
       // Use cardId if provided, otherwise use a default
-      const cardIdToUse = cardId?.id || 101;
-      params.append('cardId', cardIdToUse);
+      if (statementType==="Account-E-Statement"){
+        const accountIdToUse = accountId || 2;
+        params.append('accountId',accountIdToUse)
+      }
+      else{
+        const cardIdToUse = cardId?.id ;
+        params.append('cardId', cardIdToUse);
+      }
+      
+ 
       
       // Format dates properly
       const formattedStartDate = `${dateRange.from}T00:00:00`;
@@ -60,7 +71,7 @@ function StatementSimulation({ accountSelected, cardId, dateRange, operationType
       // Make API request
       const response = await axios.get("http://localhost:8083/Transactions/StatementTransactions", config);
       
-      console.log("API response:", response);
+  
   
       if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
         // Handle empty response
@@ -86,30 +97,6 @@ function StatementSimulation({ accountSelected, cardId, dateRange, operationType
         // Handle unexpected response format
         setError("Unexpected response format from server.");
         
-        // Try to parse the response if it's not an array
-        if (typeof response.data === 'object') {
-          const mockData = [
-            {
-              id: "1",
-              date: "2023-05-28",
-              time: "14:30:00",
-              type: "DEPOSIT",
-              category: "Salary",
-              debit: "",
-              credit: "$2,500.00",
-            },
-            {
-              id: "2",
-              date: "2023-05-25",
-              time: "09:15:00",
-              type: "WITHDRAWAL",
-              category: "ATM",
-              debit: "$200.00",
-              credit: "",
-            }
-          ];
-          setTransactions(mockData);
-        }
       }
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -128,35 +115,14 @@ function StatementSimulation({ accountSelected, cardId, dateRange, operationType
       } else {
         setError(`Error: ${err.message}`);
       }
-      console.log(accountSelected)
+   
       
-      // Set fallback data for development/testing
-      setTransactions([
-        {
-          id: "mock1",
-          date: "2023-05-28",
-          time: "14:30:00",
-          type: "DEPOSIT",
-          category: "Salary",
-          debit: "",
-          credit: "$2,500.00",
-        },
-        {
-          id: "mock2",
-          date: "2023-05-25",
-          time: "09:15:00",
-          type: "WITHDRAWAL",
-          category: "ATM",
-          debit: "$200.00",
-          credit: "",
-        }
-      ]);
+   
     } finally {
       setLoading(false);
     }
   };
   
-  // Fetch data when component mounts or when dependencies change
   useEffect(() => {
     fetchData();
   }, [accountSelected, cardId, dateRange, operationType]); // Re-fetch when these props change

@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 
 function RecentTransactions() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -58,7 +62,7 @@ function RecentTransactions() {
   }
 
   return (
-    <div className="w-full p-3 px-5 bg-white border border-gray-100 rounded-lg shadow-sm">
+    <div className="w-full px-5 pt-5 bg-white border border-gray-100 rounded-lg shadow-sm ">
       {/* Header */}
       <h3 className="mb-3 text-lg font-medium text-gray-600">Recent Transactions</h3>
 
@@ -88,9 +92,15 @@ function RecentTransactions() {
 
       {/* View All Link */}
       <div className="text-center">
-        <a href="#" className="text-sm text-blue-500 hover:underline">
-          View all
-        </a>
+      <div className="mt-4 text-center">
+  <button
+    onClick={() => navigate('/Transactions')}
+    className="pb-2 text-sm text-blue-500 hover:underline"
+  >
+    View all
+  </button>
+</div>
+
       </div>
     </div>
   );
