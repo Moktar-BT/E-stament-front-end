@@ -1,4 +1,5 @@
 import './App.css';
+import React, { useState ,useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebare';
 import Dashboard from './Pages/Dashboard';
@@ -10,9 +11,15 @@ import About from './Pages/About';
 import SignIn from './Pages/SignIn';
 import Statement from './Pages/Statement';
 import ProtectedRoute from './components/ProtectedRoute';
+import OneSignal from 'react-onesignal';
 
 function App() {
   const location = useLocation(); // Utilisez useLocation pour obtenir l'emplacement actuel
+
+ 
+
+
+
 
   return (
     <div className="flex h-screen"> {/* Utilisez h-screen pour occuper toute la hauteur de l'écran */}

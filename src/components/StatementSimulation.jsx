@@ -1,17 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import axios from 'axios';
 import logo from '../assets/proxym_log.png';
 import { Info } from 'lucide-react';
 
-function StatementSimulation({ accountSelected,accountId, cardId, dateRange, operationType ,statementType }) {
-  const [transactions, setTransactions] = useState([]);
+const StatementSimulation = forwardRef(({ 
+  transactions,
+  setTransactions,
+  accountSelected, 
+  accountId, 
+  cardId, 
+  dateRange, 
+  operationType, 
+  statementType,
+  isGeneratingPDF 
+}, ref) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  console.log("child",accountId)
-
-
-  // Extract operation types from the operationType object
+ 
   const getSelectedOperationTypes = () => {
     const types = [];
     if (operationType.deposits) types.push("DEPOSIT");
@@ -19,15 +24,12 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
     if (operationType.transfers) types.push("TRANSFER");
     if (operationType.payments) types.push("PAYMENT");
     if (operationType.fees) types.push("FEE");
-    
-    // Default to all types if none selected
     return types.length > 0 ? types : ["DEPOSIT", "WITHDRAWAL", "TRANSFER", "PAYMENT", "FEE", "ADJUSTMENT"];
   };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Get token from localStorage
       const token = localStorage.getItem('authToken') || localStorage.getItem('token');
       
       if (!token) {
@@ -36,49 +38,37 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
         return;
       }
 
-      // Prepare request parameters
       const params = new URLSearchParams();
       
-      // Use cardId if provided, otherwise use a default
-      if (statementType==="Account-E-Statement"){
+      if (statementType === "Account-E-Statement") {
         const accountIdToUse = accountId || 2;
-        params.append('accountId',accountIdToUse)
-      }
-      else{
-        const cardIdToUse = cardId?.id ;
+        params.append('accountId', accountIdToUse);
+      } else {
+        const cardIdToUse = cardId?.id;
         params.append('cardId', cardIdToUse);
       }
       
- 
-      
-      // Format dates properly
       const formattedStartDate = `${dateRange.from}T00:00:00`;
       const formattedEndDate = `${dateRange.to}T23:59:59`;
       params.append('startDate', formattedStartDate);
       params.append('endDate', formattedEndDate);
       
-      // Get selected operation types
       const operationTypes = getSelectedOperationTypes();
       params.append('operationTypes', operationTypes.join(','));
-  
+
       const config = {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
         params: params,
       };
-  
-      // Make API request
+
       const response = await axios.get("http://localhost:8083/Transactions/StatementTransactions", config);
       
-  
-  
       if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
-        // Handle empty response
         setTransactions([]);
         setError("No transactions found for the selected criteria.");
       } else if (Array.isArray(response.data)) {
-        // Format transaction data
         const formatted = response.data.map(t => {
           const isCredit = t.operation === "DEPOSIT";
           return {
@@ -94,14 +84,10 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
         setTransactions(formatted);
         setError(null);
       } else {
-        // Handle unexpected response format
         setError("Unexpected response format from server.");
-        
       }
     } catch (err) {
       console.error("Error fetching data:", err);
-      
-      // Provide more specific error messages based on the error
       if (err.response) {
         if (err.response.status === 401 || err.response.status === 403) {
           setError("Authentication error. Please log in again.");
@@ -115,9 +101,6 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
       } else {
         setError(`Error: ${err.message}`);
       }
-   
-      
-   
     } finally {
       setLoading(false);
     }
@@ -125,9 +108,8 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
   
   useEffect(() => {
     fetchData();
-  }, [accountSelected, cardId, dateRange, operationType]); // Re-fetch when these props change
+  }, [accountSelected, cardId, dateRange, operationType]);
 
-  // Calculate totals for summary
   const totalDeposits = transactions
     .filter((t) => t.credit)
     .reduce((sum, t) => sum + parseFloat(t.credit.replace('$', '').replace(',', '') || 0), 0);
@@ -137,7 +119,7 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
     .reduce((sum, t) => sum + parseFloat(t.debit.replace('$', '').replace(',', '') || 0), 0);
 
   return (
-    <div className="lg:col-span-2">
+    <div className="lg:col-span-2" ref={ref}>
       <div className="h-full p-6 bg-white rounded-lg shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <h3 className="flex text-lg font-medium text-gray-800">
@@ -150,27 +132,23 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
           </div>
         </div>
 
-        {/* Account Info */}
         <div className="pb-4 mb-4 border-b border-gray-200">
           <div className="flex justify-between mb-2">
             <div>
-            <h4 className="font-medium text-gray-500">
-  {statementType === "Account-E-Statement"
-    ? "Account E-Statement"
-    : statementType === "Card-E-Statement"
-    ? "Card E-Statement"
-    : "Account Statement"}
-</h4>
-<p className="text-sm text-gray-900">
+              <h4 className="font-medium text-gray-500">
+                {statementType === "Account-E-Statement"
+                  ? "Account E-Statement"
+                  : statementType === "Card-E-Statement"
+                  ? "Card E-Statement"
+                  : "Account Statement"}
+              </h4>
+              <p className="text-sm text-gray-900">
                 {statementType === "Account-E-Statement"
                   ? accountSelected
                   : cardId?.cardNumber
                     ? `${cardId.cardType} Card (****${cardId.cardNumber.slice(-4)})`
                     : "No card selected"}
               </p>
-
-
-
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Period</p>
@@ -181,11 +159,10 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
           </div>
         </div>
 
-        {/* Summary */}
         <div className="pb-4 mb-4 border-b border-gray-200">
           <h4 className="mb-3 font-medium text-gray-800">Summary</h4>
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 bg-green-100 rounded-md ">
+            <div className="p-3 bg-green-100 rounded-md">
               <p className="text-sm text-green-600">Total Deposits</p>
               <p className="text-lg font-medium text-green-600">+${totalDeposits.toFixed(2)}</p>
             </div>
@@ -196,7 +173,6 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
           </div>
         </div>
 
-        {/* Transactions Table */}
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center p-8">
@@ -208,7 +184,7 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
               {error}
             </div>
           ) : (
-            <div className="max-h-[675px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className={`${isGeneratingPDF ? '' : 'max-h-[675px] overflow-y-auto'} scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100`}>
               <table className="min-w-full">
                 <thead className="sticky top-0 bg-white">
                   <tr className="text-xs font-medium tracking-wider text-left text-gray-500 uppercase bg-gray-50">
@@ -252,6 +228,6 @@ function StatementSimulation({ accountSelected,accountId, cardId, dateRange, ope
       </div>
     </div>
   );
-}
+});
 
 export default StatementSimulation;

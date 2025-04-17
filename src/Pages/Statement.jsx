@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Download } from "lucide-react";
 import Logoutbutton from "../components/Logoutbutton";
 import RightSideModal from '../components/RightSideModal';
@@ -6,6 +6,9 @@ import StatementSimulation from "../components/StatementSimulation";
 import axios from "axios";
 import FileType from "../components/FileType";
 import DateRange from "../components/DateRange";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import * as XLSX from "xlsx"; 
 
 function Statement() {
   const [transactionTypes, setTransactionTypes] = useState({
@@ -15,13 +18,9 @@ function Statement() {
     payments: true,
     fees: true,
   });
-  
-
-
- 
+  const [transactions, setTransactions] = useState([]);
   const [accountSelected, setAccountSelected] = useState("");
-  const[Account,setAccount]=useState("");
-  const[accountId,setAccountId]=useState("")
+  const [accountId, setAccountId] = useState("");
   const [Card, setCard] = useState("");
   const [statementType, setStatementType] = useState("Account-E-Statement");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,36 +31,122 @@ function Statement() {
     from: "2022-05-01",
     to: "2023-05-31",
   });
- 
-  console.log(accountId)
+  const [fileType, setFileType] = useState("pdf");
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
- const handleSelectChange = (e) => {
-  const selectedValue = e.target.value;
-  setAccountSelected(selectedValue);
+  const statementRef = useRef();
 
-  if (statementType === "Account-E-Statement") {
-    const selectedAccount = accounts.find((account) => {
-      const lastFourDigits = account.rib.slice(-4);
-      const displayText = `${account.accountType} Account (****${lastFourDigits})`;
-      return displayText === selectedValue;
-    });
+  const generatePDF = async () => {
+    try {
+      setIsGeneratingPDF(true);
+      
+      // Wait for the state to update and DOM to re-render
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      const input = statementRef.current;
+      if (!input) {
+        console.error('Statement element not found');
+        return;
+      }
 
-    if (selectedAccount) {
-      setAccountId(selectedAccount.id);
+      const clone = input.cloneNode(true);
+      clone.style.position = 'absolute';
+      clone.style.left = '-9999px';
+      clone.style.width = input.offsetWidth + 'px';
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, { 
+        scale: 2,
+        useCORS: true,
+        logging: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0
+      });
+
+      document.body.removeChild(clone);
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+  
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('statement.pdf');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please check console for details.');
+    } finally {
+      setIsGeneratingPDF(false);
     }
-  } else {
-    const selectedCard = cards.find((card) => {
-      const lastFourDigits = card.cardNumber.slice(-4);
-      const displayText = `${card.cardType} Card (****${lastFourDigits})`;
-      return displayText === selectedValue;
-    });
+  };
 
-    if (selectedCard) {
-      setCard(selectedCard);
-      setAccountId(selectedCard.id); // ou `setCardId`, si c'est plus logique dans ton contexte
+  const handleDownload = () => {
+    if (fileType === "pdf") {
+      generatePDF();
+    } else if (fileType === "csv") {
+      downloadCSV();
+    } else if (fileType === "excel") {
+      downloadExcel();
+    } else {
+      alert(`Statement downloaded as ${fileType.toUpperCase()}!`);
     }
-  }
-};
+  };
+  
+  
+  const downloadCSV = () => {
+    const csv = convertToCSV(transactions);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "transactions.csv"; // Name of the CSV file
+    link.click();
+  };
+  
+  const convertToCSV = (transactions) => {
+    const header = Object.keys(transactions[0] || {}).join(",");
+    const rows = transactions.map((transaction) =>
+      Object.values(transaction).join(",")
+    );
+    return [header, ...rows].join("\n");
+  };
+  
+  const downloadExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(transactions);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Transactions");
+    XLSX.writeFile(wb, "transactions.xlsx"); // Name of the Excel file
+  };
+
+
+  const handleSelectChange = (e) => {
+    const selectedValue = e.target.value;
+    setAccountSelected(selectedValue);
+
+    if (statementType === "Account-E-Statement") {
+      const selectedAccount = accounts.find((account) => {
+        const lastFourDigits = account.rib.slice(-4);
+        const displayText = `${account.accountType} Account (****${lastFourDigits})`;
+        return displayText === selectedValue;
+      });
+
+      if (selectedAccount) {
+        setAccountId(selectedAccount.id);
+      }
+    } else {
+      const selectedCard = cards.find((card) => {
+        const lastFourDigits = card.cardNumber.slice(-4);
+        const displayText = `${card.cardType} Card (****${lastFourDigits})`;
+        return displayText === selectedValue;
+      });
+
+      if (selectedCard) {
+        setCard(selectedCard);
+        setAccountId(selectedCard.id);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,13 +167,10 @@ function Statement() {
           const response = await axios.get("http://localhost:8083/Account/list_of_accounts", { headers });
           setAccounts(response.data);
           if (response.data.length > 0) {
-            const account = response.data[0];   
+            const account = response.data[0];
             const lastFourDigits = account.rib.slice(-4);
-            setAccountSelected(`${account.accountType} Account (****${lastFourDigits})${account.id}`);
-           
-            
-           
-           
+            setAccountSelected(`${account.accountType} Account (****${lastFourDigits})`);
+            setAccountId(account.id);
           }
         } else {
           const response = await axios.get("http://localhost:8083/Card/list_of_cards", { headers });
@@ -96,7 +178,9 @@ function Statement() {
           if (response.data.length > 0) {
             const card = response.data[0];
             const lastFourDigits = card.cardNumber.slice(-4);
-            setCard(`${card.cardType} Card (****${lastFourDigits})`);
+            setCard(card);
+            setAccountSelected(`${card.cardType} Card (****${lastFourDigits})`);
+            setAccountId(card.id);
           }
         }
       } catch (error) {
@@ -108,9 +192,9 @@ function Statement() {
         setLoading(false);
       }
     };
-    
+
     fetchData();
-  }, [statementType, dateRange]); // Note: dateRange is in the dependency array, so you can trigger a data fetch when it updates
+  }, [statementType]);
 
   return (
     <>
@@ -129,9 +213,7 @@ function Statement() {
 
       <div className="min-h-screen">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Configuration Panel */}
           <div className="space-y-6 lg:col-span-1">
-            {/* Account/Card Selection */}
             <div className="p-6 bg-white rounded-lg shadow-sm">
               <h3 className="mb-4 text-lg font-medium text-gray-800">
                 {statementType === "Account-E-Statement" ? "Account" : "Card"}
@@ -151,7 +233,6 @@ function Statement() {
                       ? accounts.map((account) => {
                           const lastFourDigits = account.rib.slice(-4);
                           const displayText = `${account.accountType} Account (****${lastFourDigits})`;
-                         
                           return (
                             <option key={account.id} value={displayText}>
                               {displayText}
@@ -172,9 +253,8 @@ function Statement() {
               </div>
             </div>
 
-            {/* Date Range Options */}
-            {/* Pass setDateRange to allow the child to update dateRange in the parent */}
             <DateRange dateRange={dateRange} setDateRange={setDateRange} />
+            
             <div className="p-6 bg-white rounded-lg shadow-sm">
               <h3 className="mb-4 text-lg font-medium text-gray-800">Transaction Types</h3>
               <div className="space-y-3">
@@ -195,13 +275,15 @@ function Statement() {
               </div>
             </div>
 
-            <FileType />
+            <FileType 
+            transactions={transactions} 
+            fileType={fileType}
+            setFileType={setFileType} />
 
-            {/* Action Buttons */}
             <div className="space-y-3">
               <button
                 className="flex items-center justify-center w-full px-4 py-3 text-white transition-colors bg-indigo-500 rounded-md hover:bg-indigo-600"
-                onClick={() => alert("Statement downloaded!")}
+                onClick={handleDownload}
               >
                 <Download size={18} className="mr-2" />
                 Download Statement
@@ -209,22 +291,20 @@ function Statement() {
             </div>
           </div>
 
-          
-            
-            <StatementSimulation
+          <StatementSimulation
+            transactions={transactions} 
+            setTransactions={setTransactions}
+            ref={statementRef}
             accountSelected={accountSelected}
             accountId={accountId}
             cardId={Card}
             dateRange={dateRange}
             operationType={transactionTypes}
             statementType={statementType}
-          
+            isGeneratingPDF={isGeneratingPDF}
           />
-          
-
-          
         </div>
-        {/* Footer */}
+
         <div className="mt-10 ml-5">
           <span className="text-gray-600">© 2025 Proxym IT. All rights reserved.</span>
         </div>

@@ -147,7 +147,7 @@ console.log(cards)
             <div key={transaction.id} className="grid items-center grid-cols-9 px-4 py-4 text-sm bg-gray-100 rounded-lg gap-x-4">
               <div className="font-medium text-blue-500">Transaction {transaction.id}</div>
               <span className="flex items-center justify-center">
-                {transaction.opereation === "DEPOSIT" ? (
+                {transaction.operation === "DEPOSIT" ? (
                   <i className="p-1 text-xl text-green-500 bg-green-100 icon-deposit_icon"></i>
                   
                 ) : (
