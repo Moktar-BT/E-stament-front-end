@@ -17,7 +17,7 @@ function SignIn() {
 
     try {
       // Send login request to the API
-      const response = await fetch("http://localhost:8083/auth/signin", {
+      const response = await fetch("http://localhost:8083/auth/user/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

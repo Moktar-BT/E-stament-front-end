@@ -6,7 +6,7 @@ function CardTransactions({ cardId }) {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [period, setPeriod] = useState('this_month');
+  const [period, setPeriod] = useState('last_3_months');
   const [operationType, setOperationType] = useState('all');
 
   useEffect(() => {

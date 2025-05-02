@@ -58,7 +58,7 @@ function Accounts() {
   };
 
   const getAccountTypeName = (type) => {
-    switch(type) {
+    switch (type) {
       case 'CHECKING': return 'Checking';
       case 'SAVINGS': return 'Savings';
       case 'BUSINESS': return 'Business';
@@ -69,7 +69,7 @@ function Accounts() {
   const handleCopy = (text, field) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(field);
-      setTimeout(() => setCopied(''), 2000);  // Reset the copied state after 2 seconds
+      setTimeout(() => setCopied(''), 2000); // Reset after 2 seconds
     }).catch(err => {
       console.error('Failed to copy: ', err);
     });
@@ -85,7 +85,7 @@ function Accounts() {
         Error: {error}
         <br />
         {error.includes('Access denied') && (
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 mt-2 text-white bg-blue-500 rounded hover:bg-blue-600"
           >
@@ -118,25 +118,27 @@ function Accounts() {
 
       <div className="flex flex-col items-center justify-center px-3 py-2 space-y-4 bg-white rounded-md md:flex-row md:space-y-0 md:space-x-24 md:items-center">
         <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => handleCopy(selectedAccount.rib, 'rib')} 
+          <button
+            onClick={() => handleCopy(selectedAccount.rib, 'rib')}
             className="px-2 py-1 font-mono text-gray-600 border border-gray-500 rounded-xl hover:bg-gray-100"
           >
-            Copy<i className="ml-1 text-gray-600 icon-copy_icon"></i>
+            {copied === 'rib' ? 'Copied!' : 'Copy'}
+            <i className="ml-1 text-gray-600 icon-copy_icon"></i>
           </button>
           <span>RIB: {selectedAccount.rib}</span>
-          {copied === 'rib' && <span className="ml-2 text-black">Copied!</span>}
         </div>
+
         <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => handleCopy(selectedAccount.iban, 'iban')} 
+          <button
+            onClick={() => handleCopy(selectedAccount.iban, 'iban')}
             className="px-2 py-1 font-mono text-gray-600 border border-gray-500 rounded-xl hover:bg-gray-100"
           >
-            Copy<i className="ml-1 text-gray-600 icon-copy_icon"></i>
+            {copied === 'iban' ? 'Copied!' : 'Copy'}
+            <i className="ml-1 text-gray-600 icon-copy_icon"></i>
           </button>
           <span>IBAN: {selectedAccount.iban}</span>
-          {copied === 'iban' && <span className="ml-2 text-black">Copied!</span>}
         </div>
+
         <div className="flex items-center">
           <span>Account Type: {getAccountTypeName(selectedAccount.accountType)}</span>
         </div>
@@ -145,6 +147,7 @@ function Accounts() {
       <div className="mt-3 mb-7">
         <AccountName account={selectedAccount} />
       </div>
+
       <div className="grid grid-cols-1 gap-7 md:grid-cols-3">
         <div className="md:col-span-2">
           <A_C_Transactions accountId={selectedAccount.id} />
@@ -158,19 +161,17 @@ function Accounts() {
         <span className="text-gray-600">© 2025 Proxym IT. All rights reserved.</span>
       </div>
 
-      <RightSideModal 
+      <RightSideModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Switch Account"
       >
         <div className="space-y-4">
           {accounts.map(account => (
-            <div 
+            <div
               key={account.id}
               onClick={() => handleAccountSwitch(account)}
-              className={`p-4 transition-colors border rounded-lg cursor-pointer hover:bg-gray-50 ${
-                account.id === selectedAccount.id ? 'border-green-300 bg-green-50' : 'border-gray-200'
-              }`}
+              className={`p-4 transition-colors border rounded-lg cursor-pointer hover:bg-gray-50 ${account.id === selectedAccount.id ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -182,7 +183,7 @@ function Accounts() {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-green-600">
-                    {account.balance.toLocaleString('fr-FR')} 
+                    {account.balance.toLocaleString('fr-FR')}
                   </p>
                   <p className="text-xs text-gray-400">Available balance</p>
                 </div>

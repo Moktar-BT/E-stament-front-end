@@ -4,20 +4,59 @@ import logo1 from "../assets/proxym_logo.png";
 import logo from "../assets/proxym_log.png";
 import profile_img from '../assets/Male Avatar 03.png';
 import { useLocation } from "react-router-dom";
-
+import axios from "axios";
 
 function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(true);
-
-  // Load activeIndex from localStorage or default to "menu1-0"
   const [activeIndex, setActiveIndex] = useState(() => {
     return localStorage.getItem("activeMenuIndex") || "menu1-0";
   });
+  const [user, setUser] = useState({
+    image: profile_img,
+    name: "Loading..."
+  });
+
   localStorage.removeItem("activeMenuIndex");
 
   useEffect(() => {
     localStorage.setItem("activeMenuIndex", activeIndex);
   }, [activeIndex]);
+
+  // Fetch user data when component mounts
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("No token found");
+          return;
+        }
+
+        const response = await axios.get(
+          "http://localhost:8083/Dashboard/UserFirstNameLastName",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+
+        setUser({
+          image: profile_img,
+          name: `${response.data.firstName} ${response.data.lastName}`
+        });
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        // Fallback to default name if API fails
+        setUser({
+          image: profile_img,
+          name: "User"
+        });
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const menuItems1 = [
     { icon: <i className="icon-dashboard"></i>, label: "Dashboard", path: "/" },
@@ -32,9 +71,7 @@ function Sidebar() {
     { icon: <i className="icon-info_icon"></i>, label: "About", path: "/About" },
   ];
 
-  const user = { image: profile_img, name: "Moktar BOUATAY" };
   const location = useLocation(); 
-
 
   return (
     <div
@@ -100,7 +137,7 @@ function Sidebar() {
         </div>
       </div>
 
-      {/* Profil en bas */}
+      {/* Profile at bottom */}
       <div className="flex items-center p-3 pl-5 space-x-2 border-t border-gray-300">
         <img src={user.image} alt="Profile" className="w-10 h-10 rounded-full" />
         <span
