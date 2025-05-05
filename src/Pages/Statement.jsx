@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Download } from "lucide-react";
-import Logoutbutton from "../components/Logoutbutton";
-import RightSideModal from '../components/RightSideModal';
-import StatementSimulation from "../components/StatementSimulation";
-import axios from "axios";
-import FileType from "../components/FileType";
-import DateRange from "../components/DateRange";
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import * as XLSX from "xlsx"; 
+"use client"
+
+import { useState, useEffect, useRef } from "react"
+import { Download } from "lucide-react"
+import Logoutbutton from "../components/Logoutbutton"
+import RightSideModal from "../components/RightSideModal"
+import StatementSimulation from "../components/StatementSimulation"
+import axios from "axios"
+import FileType from "../components/FileType"
+import DateRange from "../components/DateRange"
+import html2canvas from "html2canvas"
+import jsPDF from "jspdf"
+import * as XLSX from "xlsx"
 
 function Statement() {
   const [transactionTypes, setTransactionTypes] = useState({
@@ -17,184 +19,197 @@ function Statement() {
     transfers: true,
     payments: true,
     fees: true,
-  });
-  const [transactions, setTransactions] = useState([]);
-  const [accountSelected, setAccountSelected] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [Card, setCard] = useState("");
-  const [statementType, setStatementType] = useState("Account-E-Statement");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [accounts, setAccounts] = useState([]);
-  const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(false);
+    scanned: true,
+  })
+  const [transactions, setTransactions] = useState([])
+  const [accountSelected, setAccountSelected] = useState("")
+  const [accountId, setAccountId] = useState("")
+  const [Card, setCard] = useState("")
+  const [statementType, setStatementType] = useState("Account-E-Statement")
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [accounts, setAccounts] = useState([])
+  const [cards, setCards] = useState([])
+  const [loading, setLoading] = useState(false)
   const [dateRange, setDateRange] = useState({
     from: "2022-05-01",
     to: "2023-05-31",
-  });
-  const [fileType, setFileType] = useState("pdf");
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  })
+  const [fileType, setFileType] = useState("pdf")
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
 
-  const statementRef = useRef();
+  const statementRef = useRef()
 
   const generatePDF = async () => {
     try {
-      setIsGeneratingPDF(true);
-      
-      // Wait for the state to update and DOM to re-render
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      const input = statementRef.current;
+      setIsGeneratingPDF(true)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      const input = statementRef.current
       if (!input) {
-        console.error('Statement element not found');
-        return;
+        console.error("Statement element not found")
+        return
       }
 
-      const clone = input.cloneNode(true);
-      clone.style.position = 'absolute';
-      clone.style.left = '-9999px';
-      clone.style.width = input.offsetWidth + 'px';
-      document.body.appendChild(clone);
+      const clone = input.cloneNode(true)
+      clone.style.position = "absolute"
+      clone.style.left = "-9999px"
+      clone.style.width = input.offsetWidth + "px"
+      document.body.appendChild(clone)
 
-      const canvas = await html2canvas(clone, { 
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
         logging: true,
         allowTaint: true,
         scrollX: 0,
-        scrollY: 0
-      });
+        scrollY: 0,
+      })
 
-      document.body.removeChild(clone);
+      document.body.removeChild(clone)
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-  
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save('statement.pdf');
+      const imgData = canvas.toDataURL("image/png")
+      const pdf = new jsPDF("p", "mm", "a4")
+      const imgProps = pdf.getImageProperties(imgData)
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight)
+      pdf.save("statement.pdf")
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please check console for details.');
+      console.error("Error generating PDF:", error)
+      alert("Failed to generate PDF. Please check console for details.")
     } finally {
-      setIsGeneratingPDF(false);
+      setIsGeneratingPDF(false)
     }
-  };
+  }
 
   const handleDownload = () => {
     if (fileType === "pdf") {
-      generatePDF();
+      generatePDF()
     } else if (fileType === "csv") {
-      downloadCSV();
+      downloadCSV()
     } else if (fileType === "excel") {
-      downloadExcel();
+      downloadExcel()
     } else {
-      alert(`Statement downloaded as ${fileType.toUpperCase()}!`);
+      alert(`Statement downloaded as ${fileType.toUpperCase()}!`)
     }
-  };
-  
-  
-  const downloadCSV = () => {
-    const csv = convertToCSV(transactions);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "transactions.csv"; // Name of the CSV file
-    link.click();
-  };
-  
-  const convertToCSV = (transactions) => {
-    const header = Object.keys(transactions[0] || {}).join(",");
-    const rows = transactions.map((transaction) =>
-      Object.values(transaction).join(",")
-    );
-    return [header, ...rows].join("\n");
-  };
-  
-  const downloadExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(transactions);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Transactions");
-    XLSX.writeFile(wb, "transactions.xlsx"); // Name of the Excel file
-  };
+  }
 
+  const downloadCSV = () => {
+    const csv = convertToCSV(transactions)
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.download = "transactions.csv"
+    link.click()
+  }
+
+  const convertToCSV = (transactions) => {
+    const header = Object.keys(transactions[0] || {}).join(",")
+    const rows = transactions.map((transaction) => Object.values(transaction).join(","))
+    return [header, ...rows].join("\n")
+  }
+
+  const downloadExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(transactions)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Transactions")
+    XLSX.writeFile(wb, "transactions.xlsx")
+  }
 
   const handleSelectChange = (e) => {
-    const selectedValue = e.target.value;
-    setAccountSelected(selectedValue);
+    const selectedValue = e.target.value
+    setAccountSelected(selectedValue)
 
     if (statementType === "Account-E-Statement") {
       const selectedAccount = accounts.find((account) => {
-        const lastFourDigits = account.rib.slice(-4);
-        const displayText = `${account.accountType} Account (****${lastFourDigits})`;
-        return displayText === selectedValue;
-      });
+        const lastFourDigits = account.rib.slice(-4)
+        const displayText = `${account.accountType} Account (****${lastFourDigits})`
+        return displayText === selectedValue
+      })
 
       if (selectedAccount) {
-        setAccountId(selectedAccount.id);
+        setAccountId(selectedAccount.id)
       }
     } else {
       const selectedCard = cards.find((card) => {
-        const lastFourDigits = card.cardNumber.slice(-4);
-        const displayText = `${card.cardType} Card (****${lastFourDigits})`;
-        return displayText === selectedValue;
-      });
+        const lastFourDigits = card.cardNumber.slice(-4)
+        const displayText = `${card.cardType} Card (****${lastFourDigits})`
+        return displayText === selectedValue
+      })
 
       if (selectedCard) {
-        setCard(selectedCard);
-        setAccountId(selectedCard.id);
+        setCard(selectedCard)
+        setAccountId(selectedCard.id)
       }
     }
-  };
+  }
+
+  // Handle statement type change
+  const handleStatementTypeChange = (type) => {
+    setStatementType(type)
+    setIsModalOpen(false)
+
+    // Reset transactions when changing statement type
+    setTransactions([])
+
+    // If switching to Global Transaction Statement, ensure scanned is enabled
+    // If switching away from Global Transaction Statement, disable scanned option
+    if (type === "Global_Transaction_Statement") {
+      setTransactionTypes((prev) => ({ ...prev, scanned: true }))
+    } else {
+      setTransactionTypes((prev) => ({ ...prev, scanned: false }))
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("token")
 
         if (!token) {
-          console.error("No token found!");
-          return;
+          console.error("No token found!")
+          return
         }
 
         const headers = {
           Authorization: `Bearer ${token}`,
-        };
+        }
 
         if (statementType === "Account-E-Statement") {
-          const response = await axios.get("http://localhost:8083/Account/list_of_accounts", { headers });
-          setAccounts(response.data);
+          const response = await axios.get("http://localhost:8083/Account/list_of_accounts", { headers })
+          setAccounts(response.data)
           if (response.data.length > 0) {
-            const account = response.data[0];
-            const lastFourDigits = account.rib.slice(-4);
-            setAccountSelected(`${account.accountType} Account (****${lastFourDigits})`);
-            setAccountId(account.id);
+            const account = response.data[0]
+            const lastFourDigits = account.rib.slice(-4)
+            setAccountSelected(`${account.accountType} Account (****${lastFourDigits})`)
+            setAccountId(account.id)
           }
-        } else {
-          const response = await axios.get("http://localhost:8083/Card/list_of_cards", { headers });
-          setCards(response.data);
+        } else if (statementType === "Card-E-Statement") {
+          const response = await axios.get("http://localhost:8083/Card/list_of_cards", { headers })
+          setCards(response.data)
           if (response.data.length > 0) {
-            const card = response.data[0];
-            const lastFourDigits = card.cardNumber.slice(-4);
-            setCard(card);
-            setAccountSelected(`${card.cardType} Card (****${lastFourDigits})`);
-            setAccountId(card.id);
+            const card = response.data[0]
+            const lastFourDigits = card.cardNumber.slice(-4)
+            setCard(card)
+            setAccountSelected(`${card.cardType} Card (****${lastFourDigits})`)
+            setAccountId(card.id)
           }
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data:", error)
         if (error.response && error.response.status === 403) {
-          console.error("Forbidden: Token might be expired or invalid.");
+          console.error("Forbidden: Token might be expired or invalid.")
         }
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchData();
-  }, [statementType]);
+    fetchData()
+  }, [statementType])
 
   return (
     <>
@@ -214,71 +229,77 @@ function Statement() {
       <div className="min-h-screen">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-1">
-            <div className="p-6 bg-white rounded-lg shadow-sm">
-              <h3 className="mb-4 text-lg font-medium text-gray-800">
-                {statementType === "Account-E-Statement" ? "Account" : "Card"}
-              </h3>
-              <div className="relative">
-                {loading ? (
-                  <div className="w-full p-3 text-center text-gray-500 bg-gray-100 rounded-md">
-                    Loading...
-                  </div>
-                ) : (
-                  <select
-                    className="w-full p-3 pr-10 border border-gray-200 rounded-md appearance-none bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={accountSelected}
-                    onChange={(e) => handleSelectChange(e)}
-                  >
-                    {statementType === "Account-E-Statement"
-                      ? accounts.map((account) => {
-                          const lastFourDigits = account.rib.slice(-4);
-                          const displayText = `${account.accountType} Account (****${lastFourDigits})`;
-                          return (
-                            <option key={account.id} value={displayText}>
-                              {displayText}
-                            </option>
-                          );
-                        })
-                      : cards.map((card) => {
-                          const lastFourDigits = card.cardNumber.slice(-4);
-                          const displayText = `${card.cardType} Card (****${lastFourDigits})`;
-                          return (
-                            <option key={card.id} value={displayText}>
-                              {displayText}
-                            </option>
-                          );
-                        })}
-                  </select>
-                )}
+            {/* Only show account/card selector if not Global Transaction Statement */}
+            {statementType !== "Global_Transaction_Statement" && (
+              <div className="p-6 bg-white rounded-lg shadow-sm">
+                <h3 className="mb-4 text-lg font-medium text-gray-800">
+                  {statementType === "Account-E-Statement" ? "Account" : "Card"}
+                </h3>
+                <div className="relative">
+                  {loading ? (
+                    <div className="w-full p-3 text-center text-gray-500 bg-gray-100 rounded-md">Loading...</div>
+                  ) : (
+                    <select
+                      className="w-full p-3 pr-10 border border-gray-200 rounded-md appearance-none bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      value={accountSelected}
+                      onChange={(e) => handleSelectChange(e)}
+                    >
+                      {statementType === "Account-E-Statement"
+                        ? accounts.map((account) => {
+                            const lastFourDigits = account.rib.slice(-4)
+                            const displayText = `${account.accountType} Account (****${lastFourDigits})`
+                            return (
+                              <option key={account.id} value={displayText}>
+                                {displayText}
+                              </option>
+                            )
+                          })
+                        : cards.map((card) => {
+                            const lastFourDigits = card.cardNumber.slice(-4)
+                            const displayText = `${card.cardType} Card (****${lastFourDigits})`
+                            return (
+                              <option key={card.id} value={displayText}>
+                                {displayText}
+                              </option>
+                            )
+                          })}
+                    </select>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <DateRange dateRange={dateRange} setDateRange={setDateRange} />
-            
+
             <div className="p-6 bg-white rounded-lg shadow-sm">
               <h3 className="mb-4 text-lg font-medium text-gray-800">Transaction Types</h3>
               <div className="space-y-3">
-                {Object.entries(transactionTypes).map(([type, checked]) => (
-                  <div key={type} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={type}
-                      checked={checked}
-                      onChange={() => setTransactionTypes({ ...transactionTypes, [type]: !checked })}
-                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                    />
-                    <label htmlFor={type} className="block ml-2 text-sm text-gray-700 capitalize">
-                      {type}
-                    </label>
-                  </div>
-                ))}
+                {Object.entries(transactionTypes)
+                  .filter(([type]) => {
+                    // Only show "scanned" for Global Transaction Statement
+                    if (type === "scanned" && statementType !== "Global_Transaction_Statement") {
+                      return false
+                    }
+                    return true
+                  })
+                  .map(([type, checked]) => (
+                    <div key={type} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={type}
+                        checked={checked}
+                        onChange={() => setTransactionTypes({ ...transactionTypes, [type]: !checked })}
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      />
+                      <label htmlFor={type} className="block ml-2 text-sm text-gray-700 capitalize">
+                        {type}
+                      </label>
+                    </div>
+                  ))}
               </div>
             </div>
 
-            <FileType 
-            transactions={transactions} 
-            fileType={fileType}
-            setFileType={setFileType} />
+            <FileType transactions={transactions} fileType={fileType} setFileType={setFileType} />
 
             <div className="space-y-3">
               <button
@@ -292,7 +313,7 @@ function Statement() {
           </div>
 
           <StatementSimulation
-            transactions={transactions} 
+            transactions={transactions}
             setTransactions={setTransactions}
             ref={statementRef}
             accountSelected={accountSelected}
@@ -310,37 +331,34 @@ function Statement() {
         </div>
       </div>
 
-      <RightSideModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Select E-Statement Type"
-      >
+      <RightSideModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Select E-Statement Type">
         <div className="space-y-4">
           <div
-            onClick={() => {
-              setStatementType("Account-E-Statement");
-              setIsModalOpen(false);
-            }}
+            onClick={() => handleStatementTypeChange("Account-E-Statement")}
             className="flex items-center p-4 transition-colors border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
           >
-            <span>Account E-Statement</span>
+            <span>Account Statement</span>
             <i className="ml-2 text-2xl icon-statement_icon"></i>
           </div>
 
           <div
-            onClick={() => {
-              setStatementType("Card-E-Statement");
-              setIsModalOpen(false);
-            }}
+            onClick={() => handleStatementTypeChange("Card-E-Statement")}
             className="flex items-center p-4 transition-colors border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
           >
-            <span>Card E-Statement</span>
+            <span>Card Statement</span>
+            <i className="ml-2 text-2xl icon-statement_icon"></i>
+          </div>
+          <div
+            onClick={() => handleStatementTypeChange("Global_Transaction_Statement")}
+            className="flex items-center p-4 transition-colors border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
+          >
+            <span>Global Transaction Statement</span>
             <i className="ml-2 text-2xl icon-statement_icon"></i>
           </div>
         </div>
       </RightSideModal>
     </>
-  );
+  )
 }
 
-export default Statement;
+export default Statement

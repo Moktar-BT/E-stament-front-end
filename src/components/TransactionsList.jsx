@@ -14,22 +14,18 @@ function TransactionsList() {
   const [operationType, setOperationType] = useState("all");
   const [loading, setLoading] = useState(true);
 
-  // Get the token from localStorage
   const token = localStorage.getItem("token");
 
-  // Create an Axios instance with Authorization header
   const axiosInstance = axios.create({
     headers: {
       Authorization: token ? `Bearer ${token}` : "",
     },
   });
 
-  // Fetch cards and accounts when the page loads
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
         setLoading(true);
-        // Fetch cards and accounts in parallel
         const [cardsResponse, accountsResponse] = await Promise.all([
           axiosInstance.get("http://localhost:8083/Card/list_of_cards"),
           axiosInstance.get("http://localhost:8083/Account/list_of_accounts")
@@ -38,7 +34,6 @@ function TransactionsList() {
         setCards(cardsResponse.data);
         setAccounts(accountsResponse.data);
 
-        // Set default source ID to first account if available
         if (accountsResponse.data.length > 0) {
           setSelectedSourceId(accountsResponse.data[0].id);
         }
@@ -52,26 +47,33 @@ function TransactionsList() {
     fetchInitialData();
   }, []);
 
-  // Fetch transactions whenever filters change
   useEffect(() => {
     const fetchTransactions = async () => {
-      if (!selectedSourceId) return; // Don't fetch if no source ID is set
-
       try {
         setLoading(true);
-        const params = {
-          period,
-          operationType,
-          source: selectedSource,
-          sourceId: selectedSourceId,
-        };
-        
-        const response = await axiosInstance.get(
-          "http://localhost:8083/Transactions/filtredTransactions", 
-          { params }
-        );
-        
-        setTransactions(response.data);
+
+        if (selectedFilter === "Cash") {
+          const response = await axiosInstance.get(
+            "http://localhost:8083/Transactions/findScannedTransactions", 
+            { params: { period } }
+          );
+          setTransactions(response.data);
+        } else {
+          if (!selectedSourceId) return;
+
+          const params = {
+            period,
+            operationType,
+            source: selectedSource,
+            sourceId: selectedSourceId,
+          };
+
+          const response = await axiosInstance.get(
+            "http://localhost:8083/Transactions/filtredTransactions", 
+            { params }
+          );
+          setTransactions(response.data);
+        }
       } catch (error) {
         console.error("Error fetching transactions:", error);
       } finally {
@@ -80,19 +82,19 @@ function TransactionsList() {
     };
 
     fetchTransactions();
-  }, [period, operationType, selectedSource, selectedSourceId]);
+  }, [period, operationType, selectedSource, selectedSourceId, selectedFilter]);
 
   const handleFilterChange = (e) => {
     const value = e.target.value;
     setSelectedFilter(value);
-    
+
     if (value === "card") {
       setSelectedSource("card");
-      setSelectedSourceId(cards[0]?.id || "");  // Default to first card
+      setSelectedSourceId(cards[0]?.id || "");
     } else if (value === "account") {
       setSelectedSource("account");
-      setSelectedSourceId(accounts[0]?.id || "");  // Default to first account
-    } else {
+      setSelectedSourceId(accounts[0]?.id || "");
+    } else if (value === "Cash") {
       setSelectedSource("all");
       setSelectedSourceId("");
     }
@@ -103,33 +105,38 @@ function TransactionsList() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-medium text-gray-700">Transaction History</h2>
         <div className="flex items-center space-x-4">
+          {/* Filter: account / card / cash */}
           <select
             className="block p-2 pr-8 text-sm text-gray-900 border border-gray-300 rounded-lg appearance-none bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 custom-select"
             onChange={handleFilterChange}
             value={selectedFilter}
           >
             <option value="account">Account</option>
-            <option value="card">Card</option>           
+            <option value="card">Card</option>   
+            <option value="Cash">Cash</option>        
           </select>
 
-          <select
-            className="block p-2 pr-8 text-sm text-gray-900 border border-gray-300 rounded-lg appearance-none bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 custom-select"
-            onChange={(e) => setSelectedSourceId(e.target.value)}
-            value={selectedSourceId}
-            disabled={selectedSource === "all"}
-          >
-            {selectedSource === "card" && cards.map((card) => (
-              <option key={card.id} value={card.id}>
-                Card {card.cardType} ({card.cardNumber})
-              </option>
-            ))}
-            {selectedSource === "account" && accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                Account {account.accountType} ({account.rib})
-              </option>
-            ))}
-          </select>
+          {/* Source ID (account or card) */}
+          {selectedFilter !== "Cash" && (
+            <select
+              className="block p-2 pr-8 text-sm text-gray-900 border border-gray-300 rounded-lg appearance-none bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 custom-select"
+              onChange={(e) => setSelectedSourceId(e.target.value)}
+              value={selectedSourceId}
+            >
+              {selectedSource === "card" && cards.map((card) => (
+                <option key={card.id} value={card.id}>
+                  Card {card.cardType} ({card.cardNumber})
+                </option>
+              ))}
+              {selectedSource === "account" && accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  Account {account.accountType} ({account.rib})
+                </option>
+              ))}
+            </select>
+          )}
 
+          {/* Period */}
           <select
             className="block p-2 pr-8 text-sm text-gray-900 border border-gray-300 rounded-lg appearance-none bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 custom-select"
             onChange={(e) => setPeriod(e.target.value)}
@@ -141,15 +148,18 @@ function TransactionsList() {
             <option value="last_year">Last Year</option>
           </select>
 
-          <select
-            className="block p-2 pr-8 text-sm text-gray-900 border border-gray-300 rounded-lg appearance-none bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 custom-select"
-            onChange={(e) => setOperationType(e.target.value)}
-            value={operationType}
-          >
-            <option value="all">All</option>
-            <option value="incomes">Incomes</option>
-            <option value="expenses">Expenses</option>
-          </select>
+          {/* Operation Type */}
+          {selectedFilter !== "Cash" && (
+            <select
+              className="block p-2 pr-8 text-sm text-gray-900 border border-gray-300 rounded-lg appearance-none bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 custom-select"
+              onChange={(e) => setOperationType(e.target.value)}
+              value={operationType}
+            >
+              <option value="all">All</option>
+              <option value="incomes">Incomes</option>
+              <option value="expenses">Expenses</option>
+            </select>
+          )}
         </div>
       </div>
 
@@ -172,8 +182,12 @@ function TransactionsList() {
                 )}
               </span>
               <div className="text-gray-600">{transaction.category}</div>
-              <div className="w-40 text-gray-600">Payment Method: {transaction.paymentMethod}</div>
-              <div className="w-40 text-gray-600 ml-14">{transaction.accountRib || transaction.cardNumber}</div>
+              <div className="w-40 text-gray-600">
+                {transaction.paymentMethod === "Unknown" ? "Scanned" : transaction.paymentMethod}
+              </div>
+              <div className="w-40 text-gray-600 ml-14">
+                {transaction.accountRib || transaction.cardNumber || "Cash"}
+              </div>
               <div className="w-40 ml-16 text-gray-600">{new Date(transaction.dateTime).toLocaleDateString()}</div>
               <div className="w-40 text-gray-600 ml-14">{new Date(transaction.dateTime).toLocaleTimeString()}</div>
               <div
@@ -181,7 +195,9 @@ function TransactionsList() {
               >
                 {transaction.status ? "Completed" : "Failed"}
               </div>
-              <div className="font-medium text-right">{`$${transaction.amount.toFixed(2)}`}</div>
+              <div className={`font-medium text-right ${transaction.operation === "DEPOSIT" ? "text-green-500" : "text-red-500"}`}>
+                {`${transaction.operation === "DEPOSIT" ? "+" : "-"}$${transaction.amount.toFixed(2)}`}
+              </div>
             </div>
           ))}
         </div>
